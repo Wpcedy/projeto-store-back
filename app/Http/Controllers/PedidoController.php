@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PedidoRequest;
 use App\Models\pedido as PedidoModel;
+use App\Models\produto as ProdutoModel;
+use App\Models\cliente as ClienteModel;
 use Illuminate\Http\Request;
 
 class PedidoController extends Controller
@@ -20,6 +22,28 @@ class PedidoController extends Controller
       $pedidos = PedidoModel::where($where)->get();
     }
 
+    foreach ($pedidos as $key => $value) {
+      $cliente = ClienteModel::where([
+        'id' => $value['cliente'],
+      ])->get();
+      $value['clienteNome'] = $cliente[0]['nome'];
+
+      $date = new \DateTime($value['datapedido']);
+      $value['datapedido'] = date_format($date,"d/m/Y");
+
+      switch (strtoupper($value['status'])) {
+        case PedidoModel::STATUS_ABERTO:
+          $value['status'] = 'ABERTO';
+          break;
+        case PedidoModel::STATUS_APROVADO:
+          $value['status'] = 'APROVADO';
+          break;
+        case PedidoModel::STATUS_CANCELADO:
+          $value['status'] = 'CANCELADO';
+          break;
+      }
+    }
+
     return response()->json($pedidos, 200);
   }
 
@@ -31,21 +55,48 @@ class PedidoController extends Controller
       'id' => $id,
     ])->get();
 
+    $cliente = ClienteModel::where([
+      'id' => $pedido[0]['cliente'],
+    ])->get();
+    $pedido[0]['clienteNome'] = $cliente[0]['nome'];
+
+    $date = new \DateTime($pedido[0]['datapedido']);
+    $pedido[0]['datapedido'] = date_format($date,"d/m/Y");
+    $pedido[0]['produtos'] = json_decode($pedido[0]['produtos']);
+
+    switch (strtoupper($pedido[0]['status'])) {
+      case PedidoModel::STATUS_ABERTO:
+        $pedido[0]['status'] = 'ABERTO';
+        break;
+      case PedidoModel::STATUS_APROVADO:
+        $pedido[0]['status'] = 'APROVADO';
+        break;
+      case PedidoModel::STATUS_CANCELADO:
+        $pedido[0]['status'] = 'CANCELADO';
+        break;
+    }
+
     return response()->json($pedido, 200);
   }
 
   public function new(PedidoRequest $request)
   {
     $dataForm = $request->all();
-    $produtos = json_decode($dataForm['produtos'], true);
+    $produtosSelecionados = $dataForm['produtos'];
+    $ids = array_column($dataForm['produtos'], 'value');
+
+    $produtos = ProdutoModel::whereIn('id', $ids)->get();
 
     $valor = 0;
 
-    foreach ($produtos as $produto) {
-      $valor += $produto['valor'];
+    foreach ($produtos as $key => $produto) {
+      if ($produto['nome'] == $produtosSelecionados[$key]['label']) {
+        $valor += $produto['valor'];
+        $produtosSelecionados[$key]['price'] = $produto['valor'];
+      }
     }
 
-    $data = $this->createProduto($dataForm, $valor);
+    $data = $this->createProduto($dataForm['cliente'], $valor, json_encode($produtosSelecionados));
 
     return response()->json($data, 200);
   }
@@ -76,14 +127,25 @@ class PedidoController extends Controller
     return response()->json(['Pedido Cancelado com sucesso'], 200);
   }
 
-  protected function createProduto(array $data, $valor)
+  public function remover(Request $request)
+  {
+    $id = $request->route('id');
+
+    PedidoModel::where([
+      'id' => $id
+    ])->delete();
+
+    return response()->json(['Pedido Aprovado com sucesso'], 204);
+  }
+
+  protected function createProduto($clienteId, $valor, $produtos)
   {
     return PedidoModel::create([
-      'produtos' => $data['produtos'],
-      'status' => $data['status'],
+      'produtos' => $produtos,
+      'status' => PedidoModel::STATUS_ABERTO,
       'valorpedido' => $valor,
       'datapedido' => new \DateTime(),
-      'cliente' => $data['cliente'],
+      'cliente' => $clienteId,
     ]);
   }
 
@@ -94,15 +156,12 @@ class PedidoController extends Controller
     if (isset($dataForm['status'])) {
       switch (strtoupper($dataForm['status'])) {
         case 'ABERTO':
-          # code...
           $where['status'] = PedidoModel::STATUS_ABERTO;
           break;
         case 'APROVADO':
-          # code...
           $where['status'] = PedidoModel::STATUS_APROVADO;
           break;
         case 'CANCELADO':
-          # code...
           $where['status'] = PedidoModel::STATUS_CANCELADO;
           break;
       }

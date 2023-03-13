@@ -46,11 +46,31 @@ class ClienteController extends Controller
 
   public function update(ClienteRequest $request)
   {
+    $id = $request->route('id');
     $dataForm = $request->all();
 
-    $data = $this->createCliente($dataForm);
+    ClienteModel::where([
+      'id' => $id
+    ])->update([
+      'nome' => $dataForm['nome'],
+      'email' => $dataForm['email'],
+      'telefone' => $dataForm['telefone'],
+      'cpf' => $dataForm['cpf'],
+      'endereco' => $dataForm['endereco'],
+    ]);
 
-    return response()->json($data, 200);
+    return response()->json(['Cliente atualizado com sucesso'], 200);
+  }
+
+  public function remover(Request $request)
+  {
+    $id = $request->route('id');
+
+    ClienteModel::where([
+      'id' => $id
+    ])->delete();
+
+    return response()->json(['Pedido Aprovado com sucesso'], 204);
   }
 
   protected function createCliente(array $data)

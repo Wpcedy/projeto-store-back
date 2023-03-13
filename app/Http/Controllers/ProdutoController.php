@@ -45,11 +45,29 @@ class ProdutoController extends Controller
 
   public function update(ProdutoRequest $request)
   {
+    $id = $request->route('id');
     $dataForm = $request->all();
 
-    $data = $this->createProduto($dataForm);
+    ProdutoModel::where([
+      'id' => $id
+    ])->update([
+      'nome' => $dataForm['nome'],
+      'descricao' => $dataForm['descricao'],
+      'valor' => $dataForm['valor'],
+    ]);
 
-    return response()->json($data, 200);
+    return response()->json(['Cliente atualizado com sucesso'], 200);
+  }
+
+  public function remover(Request $request)
+  {
+    $id = $request->route('id');
+
+    ProdutoModel::where([
+      'id' => $id
+    ])->delete();
+
+    return response()->json(['Pedido Aprovado com sucesso'], 204);
   }
 
   protected function createProduto(array $data)

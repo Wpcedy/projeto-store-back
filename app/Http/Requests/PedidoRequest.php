@@ -24,8 +24,7 @@ class PedidoRequest extends FormRequest
     public function rules()
     {
         return [
-            'produtos' => 'required|string',
-            'status' => 'required|string|min:1|max:1',
+            'produtos' => 'required',
             'cliente' => 'required|string',
         ];
     }

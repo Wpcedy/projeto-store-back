@@ -26,7 +26,7 @@ class ClienteRequest extends FormRequest
         return [
             'nome' => 'required|string|min:3',
             'email' => 'required|string',
-            'telefone' => 'required|string|min:11|max:11',
+            'telefone' => 'required|string|min:10|max:11',
             'cpf' => 'required|string|min:11|max:11',
             'endereco' => 'required|string',
         ];

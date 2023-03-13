@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 // Route::get('/', function () {
 //     return view('welcome');
 // });
-Route::get('/ping', 'PingController@index')->name('ping');
+Route::post('/ping', 'PingController@index')->name('ping');
 //Cliente
 Route::get('/cliente/lista', 'ClienteController@index')->name('lista.clientes');
 Route::get('/cliente/{id}', 'ClienteController@get')->name('get.cliente');
